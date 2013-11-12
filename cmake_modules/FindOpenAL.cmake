@@ -5,18 +5,16 @@
 # OPENAL_INCLUDE_DIR, where to find the headers
 
 if (OPENAL_LIBRARY AND OPENAL_INCLUDE_DIR)
-  # in cache already
-  set(OPENAL_FOUND TRUE)
+    # in cache already
+    set(OPENAL_FOUND TRUE)
 else (OPENAL_LIBRARY AND OPENAL_INCLUDE_DIR)
 
 
-  FIND_PATH(OPENAL_INCLUDE_DIR 
-    NAMES
-      al.h
-)
+    find_path(OPENAL_INCLUDE_DIR 
+        NAMES al.h
+    )
 
-  FIND_LIBRARY(OPENAL_LIBRARY 
-    NAMES 
-      OpenAL al openal OpenAL32
-)
-endif (OPENAL_LIBRARY AND OPENAL_INCLUDE_DIR)
+    find_library(OPENAL_LIBRARY 
+        NAMES  OpenAL al openal OpenAL32
+    )
+endif ()
