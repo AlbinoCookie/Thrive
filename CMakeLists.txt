@@ -367,13 +367,13 @@ if(WIN32)
         # Release
         install(FILES
             ${OGRE_PLUGIN_DIR_REL}/${OGRE_PLUGIN}.dll
-            DESTINATION bin/plugins
+            DESTINATION bin
             CONFIGURATIONS Release
         )
         # Debug
         install(FILES
             ${OGRE_PLUGIN_DIR_DBG}/${OGRE_PLUGIN}_d.dll
-            DESTINATION bin/plugins
+            DESTINATION bin
             CONFIGURATIONS Debug
         )
     endforeach()
@@ -425,14 +425,14 @@ elseif(UNIX)
         # Release
         InstallFollowingSymlink(
             ${OGRE_PLUGIN_LIB_REL}
-            bin/plugins
+            bin
             Release
             True
         )
         # Debug
         InstallFollowingSymlink(
             ${OGRE_PLUGIN_LIB_DBG}
-            bin/plugins
+            bin
             Debug
             True
         )
