@@ -122,23 +122,13 @@ find_package(Bullet REQUIRED QUIET)
 
 include_directories(SYSTEM ${BULLET_INCLUDE_DIRS})
 
-############
-# irrKlang #
-############
-
-#No longer used
-
-#find_package(irrKlang REQUIRED QUIET)
-
-#include_directories(SYSTEM ${IRRKLANG_INCLUDE_DIRS})
-
 ##########
 # OpenAL #
 ##########
 
 find_package(OpenAL REQUIRED QUIET)
 
-include_directories(SYSTEM ${IRRKLANG_INCLUDE_DIR})
+include_directories(SYSTEM ${OpenAL_INCLUDE_DIR})
 
 
 #######
@@ -169,6 +159,19 @@ add_definitions(-DLUABIND_CPLUSPLUS_LUA)
 
 add_subdirectory(
     ${CMAKE_CURRENT_SOURCE_DIR}/contrib/luabind/
+)
+
+################
+# OgreOggSound #
+################
+
+add_subdirectory(
+    ${CMAKE_CURRENT_SOURCE_DIR}/contrib/ogre_ogg_sound
+)
+
+include_directories(
+    SYSTEM
+    ${CMAKE_CURRENT_SOURCE_DIR}/contrib/ogre_ogg_sound/include
 )
 
 ######################
@@ -218,7 +221,7 @@ target_link_libraries(ThriveLib
     ${BULLET_COLLISION_LIBRARY}
     ${BULLET_MATH_LIBRARY}
     ${BULLET_SOFTBODY_LIBRARY}
-    ${IRRKLANG_LIBRARIES}
+    OgreOggSound
     luabind
 )
 
