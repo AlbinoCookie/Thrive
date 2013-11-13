@@ -20,13 +20,11 @@ INCLUDE_DIRECTORIES(
 )
 
 
-message("Ogg: ${Ogg_LIBRARIES}")
-message("Vorbis: ${Vorbis_LIBRARIES}")
 
 LINK_LIBRARIES(
     ${Boost_LIBRARIES}
     ${OGRE_LIBRARIES}
-    ${OpenAL_LIBRARIES}
+    ${OPENAL_LIBRARY}
     ${Ogg_LIBRARIES}
     ${Vorbis_LIBRARIES}
 )

@@ -30,6 +30,8 @@
 #include "scripting/lua_state.h"
 #include "scripting/script_initializer.h"
 
+// Sound
+#include "sound/sound_source_system.h"
 
 // Microbe
 #include "microbe_stage/agent.h"
@@ -48,6 +50,7 @@
 #include <luabind/adopt_policy.hpp>
 #include <OgreConfigFile.h>
 #include <OgreLogManager.h>
+#include <OgreOggSoundManager.h>
 #include <OgreRenderWindow.h>
 #include <OgreRoot.h>
 #include <OgreWindowEventUtilities.h>
@@ -314,6 +317,20 @@ struct Engine::Implementation : public Ogre::WindowEventListener {
     }
 
     void
+    setupSoundManager() {
+        static const std::string DEVICE_NAME = "";
+        static const unsigned int MAX_SOURCES = 100;
+        static const unsigned int QUEUE_LIST_SIZE = 100;
+        auto& soundManager = OgreOggSound::OgreOggSoundManager::getSingleton();
+        soundManager.init(
+            DEVICE_NAME,
+            MAX_SOURCES,
+            QUEUE_LIST_SIZE,
+            m_graphics.sceneManager
+        );
+    }
+
+    void
     shutdownInputManager() {
         if (not m_input.inputManager) {
             return;
@@ -511,6 +528,7 @@ Engine::init() {
     m_impl->setupScripts();
     m_impl->setupGraphics();
     m_impl->setupInputManager();
+    m_impl->setupSoundManager();
     m_impl->loadScripts("../scripts");
     GameState* previousGameState = m_impl->m_currentGameState;
     for (const auto& pair : m_impl->m_gameStates) {

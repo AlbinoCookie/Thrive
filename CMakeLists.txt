@@ -122,14 +122,6 @@ find_package(Bullet REQUIRED QUIET)
 
 include_directories(SYSTEM ${BULLET_INCLUDE_DIRS})
 
-##########
-# OpenAL #
-##########
-
-find_package(OpenAL REQUIRED QUIET)
-
-include_directories(SYSTEM ${OpenAL_INCLUDE_DIR})
-
 
 #######
 # Lua #
@@ -165,6 +157,10 @@ add_subdirectory(
 # OgreOggSound #
 ################
 
+find_package(OpenAL REQUIRED QUIET)
+find_package(Ogg REQUIRED)
+find_package(Vorbis REQUIRED)
+
 add_subdirectory(
     ${CMAKE_CURRENT_SOURCE_DIR}/contrib/ogre_ogg_sound
 )
@@ -172,6 +168,9 @@ add_subdirectory(
 include_directories(
     SYSTEM
     ${CMAKE_CURRENT_SOURCE_DIR}/contrib/ogre_ogg_sound/include
+    ${OPENAL_INCLUDE_DIRS}
+    ${OGG_INCLUDE_DIRS}
+    ${VORBIS_INCLUDE_DIRS}
 )
 
 ######################
@@ -212,6 +211,9 @@ set_source_files_properties(
 # Compile library
 add_library(ThriveLib STATIC ${SOURCE_FILES})
 
+message("OpenAL: ${OPENAL_LIBRARY}")
+message("Ogg: ${Ogg_LIBRARIES}")
+message("Vorbis: ${Vorbis_LIBRARIES}")
 target_link_libraries(ThriveLib
     ${Boost_LIBRARIES}
     ${OGRE_LIBRARIES}
@@ -221,6 +223,9 @@ target_link_libraries(ThriveLib
     ${BULLET_COLLISION_LIBRARY}
     ${BULLET_MATH_LIBRARY}
     ${BULLET_SOFTBODY_LIBRARY}
+    ${OPENAL_LIBRARY}
+    ${Ogg_LIBRARIES}
+    ${Vorbis_LIBRARIES}
     OgreOggSound
     luabind
 )
