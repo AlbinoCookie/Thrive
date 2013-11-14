@@ -161,6 +161,8 @@ find_package(OpenAL REQUIRED QUIET)
 find_package(Ogg REQUIRED)
 find_package(Vorbis REQUIRED)
 
+add_definitions(-DHAVE_EFX=0)
+
 add_subdirectory(
     ${CMAKE_CURRENT_SOURCE_DIR}/contrib/ogre_ogg_sound
 )
