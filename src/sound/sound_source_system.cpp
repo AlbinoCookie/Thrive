@@ -50,6 +50,7 @@ SoundSourceComponent::luaBindings() {
         .def("pause", &SoundSourceComponent::pause)
         .def("play", &SoundSourceComponent::play)
         .def("stop", &SoundSourceComponent::stop)
+        .def_readonly("properties", &SoundSourceComponent::m_properties)
     ;
 }
 
@@ -186,6 +187,15 @@ REGISTER_COMPONENT(SoundSourceComponent)
 ////////////////////////////////////////////////////////////////////////////////
 // SoundSourceSystem
 ////////////////////////////////////////////////////////////////////////////////
+
+luabind::scope
+SoundSourceSystem::luaBindings() {
+    using namespace luabind;
+    return class_<SoundSourceSystem, System>("SoundSourceSystem")
+        .def(constructor<>())
+    ;
+}
+
 
 struct SoundSourceSystem::Implementation {
 

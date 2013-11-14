@@ -9,6 +9,7 @@ using namespace thrive;
 luabind::scope
 thrive::SoundBindings::luaBindings() {
     return (
+        SoundSourceSystem::luaBindings(),
         SoundSourceComponent::luaBindings()
     );
 }
