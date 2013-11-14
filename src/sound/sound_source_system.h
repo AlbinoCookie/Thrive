@@ -139,6 +139,12 @@ public:
     */
     ~SoundSourceSystem();
 
+    void
+    activate() override;
+
+    void
+    deactivate() override;
+
     /**
     * @brief Initializes the system
     *

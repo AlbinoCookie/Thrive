@@ -188,6 +188,64 @@ REGISTER_COMPONENT(SoundSourceComponent)
 ////////////////////////////////////////////////////////////////////////////////
 
 struct SoundSourceSystem::Implementation {
+
+    void
+    removeAllSounds() {
+        for (const auto& item : m_entities) {
+            this->removeSound(item.first);
+        }
+    }
+
+    void
+    removeSound(
+        EntityId entityId
+    ) {
+        auto& soundManager = OgreOggSound::OgreOggSoundManager::getSingleton();
+        OgreOggSound::OgreOggISound* sound = m_sounds[entityId];
+        if (sound) {
+            Ogre::SceneNode* sceneNode = sound->getParentSceneNode();
+            sceneNode->detachObject(sound);
+            soundManager.destroySound(sound);
+        }
+        m_sounds.erase(entityId);
+    }
+
+    void
+    restoreAllSounds() {
+        for (const auto& item : m_entities) {
+            EntityId entityId = item.first;
+            OgreSceneNodeComponent* sceneNodeComponent = std::get<0>(item.second);
+            SoundSourceComponent* soundSourceComponent = std::get<1>(item.second);
+            this->restoreSound(entityId, sceneNodeComponent, soundSourceComponent);
+        }
+    }
+
+    void
+    restoreSound(
+        EntityId entityId,
+        OgreSceneNodeComponent* sceneNodeComponent,
+        SoundSourceComponent* soundSourceComponent
+    ) {
+        if (not sceneNodeComponent->m_sceneNode) {
+            return;
+        }
+        auto& soundManager = OgreOggSound::OgreOggSoundManager::getSingleton();
+        OgreOggSound::OgreOggISound* sound = soundManager.createSound(
+            soundSourceComponent->name(),
+            soundSourceComponent->filename(),
+            soundSourceComponent->isStream(),
+            soundSourceComponent->isLoop(),
+            soundSourceComponent->doesPrebuffer()
+        );
+        if (sound) {
+            soundSourceComponent->m_sound = sound;
+            m_sounds[entityId] = sound;
+            sceneNodeComponent->m_sceneNode->attachObject(sound);
+        }
+        else {
+            //TODO: Log error. Or does OgreOggSound do this already?
+        }
+    }
     
     EntityFilter<OgreSceneNodeComponent, SoundSourceComponent> m_entities = {true};
 
@@ -204,6 +262,24 @@ SoundSourceSystem::SoundSourceSystem()
 
 
 SoundSourceSystem::~SoundSourceSystem() {}
+
+
+void
+SoundSourceSystem::activate() {
+    System::activate();
+    auto& soundManager = OgreOggSound::OgreOggSoundManager::getSingleton();
+    soundManager.setSceneManager(this->gameState()->sceneManager());
+    m_impl->restoreAllSounds();
+}
+
+
+void
+SoundSourceSystem::deactivate() {
+    System::deactivate();
+    auto& soundManager = OgreOggSound::OgreOggSoundManager::getSingleton();
+    m_impl->removeAllSounds();
+    soundManager.setSceneManager(nullptr);
+}
 
 
 void
@@ -224,35 +300,14 @@ SoundSourceSystem::shutdown() {
 
 void
 SoundSourceSystem::update(int) {
-    auto& soundManager = OgreOggSound::OgreOggSoundManager::getSingleton();
+    for (EntityId entityId : m_impl->m_entities.removedEntities()) {
+        m_impl->removeSound(entityId);
+    }
     for (auto& value : m_impl->m_entities.addedEntities()) {
         EntityId entityId = value.first;
         OgreSceneNodeComponent* sceneNodeComponent = std::get<0>(value.second);
         SoundSourceComponent* soundSourceComponent = std::get<1>(value.second);
-        OgreOggSound::OgreOggISound* sound = soundManager.createSound(
-            soundSourceComponent->name(),
-            soundSourceComponent->filename(),
-            soundSourceComponent->isStream(),
-            soundSourceComponent->isLoop(),
-            soundSourceComponent->doesPrebuffer()
-        );
-        if (sound) {
-            soundSourceComponent->m_sound = sound;
-            m_impl->m_sounds[entityId] = sound;
-            sceneNodeComponent->m_sceneNode->attachObject(sound);
-        }
-        else {
-            //TODO: Log error. Or does OgreOggSound do this already?
-        }
-    }
-    for (EntityId entityId : m_impl->m_entities.removedEntities()) {
-        OgreOggSound::OgreOggISound* sound = m_impl->m_sounds[entityId];
-        if (sound) {
-            Ogre::SceneNode* sceneNode = sound->getParentSceneNode();
-            sceneNode->detachObject(sound);
-            soundManager.destroySound(sound);
-        }
-        m_impl->m_sounds.erase(entityId);
+        m_impl->restoreSound(entityId, sceneNodeComponent, soundSourceComponent);
     }
     m_impl->m_entities.clearChanges();
     for (auto& value : m_impl->m_entities) {
