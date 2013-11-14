@@ -30,9 +30,6 @@
 #include "scripting/lua_state.h"
 #include "scripting/script_initializer.h"
 
-// Sound
-#include "sound/sound_source_system.h"
-
 // Microbe
 #include "microbe_stage/agent.h"
 
@@ -325,8 +322,7 @@ struct Engine::Implementation : public Ogre::WindowEventListener {
         soundManager.init(
             DEVICE_NAME,
             MAX_SOURCES,
-            QUEUE_LIST_SIZE,
-            m_graphics.sceneManager
+            QUEUE_LIST_SIZE
         );
     }
 
@@ -528,7 +524,6 @@ Engine::init() {
     m_impl->setupScripts();
     m_impl->setupGraphics();
     m_impl->setupInputManager();
-    m_impl->setupSoundManager();
     m_impl->loadScripts("../scripts");
     GameState* previousGameState = m_impl->m_currentGameState;
     for (const auto& pair : m_impl->m_gameStates) {
@@ -536,6 +531,9 @@ Engine::init() {
         m_impl->m_currentGameState = gameState.get();
         gameState->init();
     }
+    // OgreOggSoundManager must be initialized after at least one 
+    // Ogre::SceneManager has been instantiated
+    m_impl->setupSoundManager();
     m_impl->m_currentGameState = previousGameState;
 }
 
@@ -604,6 +602,12 @@ Engine::shutdown() {
     m_impl->shutdownInputManager();
     m_impl->m_graphics.renderWindow->destroy();
     m_impl->m_graphics.root.reset();
+}
+
+
+OgreOggSound::OgreOggSoundManager*
+Engine::soundManager() const {
+    return OgreOggSound::OgreOggSoundManager::getSingletonPtr();
 }
 
 
