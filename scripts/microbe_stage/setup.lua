@@ -137,6 +137,11 @@ end
 local function setupEmitter()
     -- Setting up an emitter for glucose
     local entity = Entity("glucose-emitter")
+    -- Sound
+    local soundSource = SoundSourceComponent("emitter", "rain.ogg", false, true, false)
+    soundSource.properties.playState = SoundSourceComponent.Play
+    soundSource.properties.relativeToListener = true
+    entity:addComponent(soundSource)
     -- Rigid body
     local rigidBody = RigidBodyComponent()
     rigidBody.properties.friction = 0.2
@@ -293,6 +298,7 @@ local function createMicrobeStage(name)
             CollisionSystem(),
             -- Graphics
             OgreAddSceneNodeSystem(),
+            SoundSourceSystem(),
             OgreUpdateSceneNodeSystem(),
             OgreCameraSystem(),
             OgreLightSystem(),
@@ -314,5 +320,4 @@ end
 
 GameState.MICROBE = createMicrobeStage("microbe")
 GameState.MICROBE_ALTERNATE = createMicrobeStage("microbe_alternate")
-
 Engine:setCurrentGameState(GameState.MICROBE)
