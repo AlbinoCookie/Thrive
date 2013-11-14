@@ -208,10 +208,10 @@ SoundSourceSystem::~SoundSourceSystem() {}
 
 void
 SoundSourceSystem::init(
-    Engine* engine
+    GameState* gameState
 ) {
-    System::init(engine);
-    m_impl->m_entities.setEntityManager(&engine->entityManager());
+    System::init(gameState);
+    m_impl->m_entities.setEntityManager(&gameState->entityManager());
 }
 
 
