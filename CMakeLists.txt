@@ -350,6 +350,12 @@ install(DIRECTORY
     CONFIGURATIONS Release  Debug
 )
 
+install(DIRECTORY
+    ${CMAKE_SOURCE_DIR}/res/sounds
+    DESTINATION ./
+    CONFIGURATIONS Release  Debug
+)
+
 # Install Runtime Libraries
 if(WIN32)
 
