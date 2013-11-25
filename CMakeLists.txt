@@ -351,9 +351,11 @@ install(DIRECTORY
 )
 
 install(DIRECTORY
-    ${CMAKE_SOURCE_DIR}/res/sounds
+    ${ASSET_DIRECTORY}/sounds
     DESTINATION ./
     CONFIGURATIONS Release  Debug
+    FILES_MATCHING
+        PATTERN "*.ogg"
 )
 
 # Install Runtime Libraries
