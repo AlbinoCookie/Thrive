@@ -297,7 +297,6 @@ struct SoundSourceSystem::Implementation {
             return;
         }
         auto& soundManager = OgreOggSound::OgreOggSoundManager::getSingleton();
-        std::cout << "Looping: " << sound->m_properties.loop << std::endl;
         OgreOggSound::OgreOggISound* ogreSound = soundManager.createSound(
             sound->name(),
             sound->filename(),
