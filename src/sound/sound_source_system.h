@@ -4,6 +4,7 @@
 #include "engine/system.h"
 #include "engine/touchable.h"
 
+#include <list>
 #include <memory>
 
 namespace luabind {
@@ -16,15 +17,25 @@ class OgreOggISound;
 
 namespace thrive {
 
+
 /**
-* @brief A component for a camera
-*
+* @brief Represents a single sound
 */
-class SoundSourceComponent : public Component {
-    COMPONENT(SoundSource)
+class Sound {
 
 public:
 
+    /**
+    * @brief Luabindings
+    *
+    * @return 
+    */
+    static luabind::scope
+    luaBindings();
+
+    /**
+    * @brief Play mode of the sound
+    */
     enum PlayState {
         Play,
         Pause,
@@ -32,92 +43,172 @@ public:
     };
 
     /**
-    * @brief Properties
+    * @brief Sound properties
     */
     struct Properties : public Touchable {
         PlayState playState = PlayState::Stop;
-        float startTime = 0.0f;
+        bool loop = false;
         float volume = 1.0f;
-        float maxVolume = 1.0f;
-        float minVolume = 0.0f;
-        float insideAngle = 360.0f;
-        float outsideAngle = 360.0f;
-        float outerConeVolume = 0.0f;
         float maxDistance = -1.0f;
         float rolloffFactor = -1.0f;
         float referenceDistance = 100.0f;
-        float pitch = 1.0f;
-        bool relativeToListener = false;
         uint8_t priority = 0;
     };
 
-    static luabind::scope
-    luaBindings();
+    /**
+    * @brief Default constructor for loading
+    */
+    Sound();
 
-    SoundSourceComponent(
+    /**
+    * @brief Constructor
+    *
+    * @param name
+    *   The name of the sound (must be unique)
+    * @param filename
+    *   The name of the sound file
+    */
+    Sound(
         std::string name,
-        std::string filename,
-        bool stream,
-        bool loop,
-        bool prebuffer
+        std::string filename
     );
 
-    SoundSourceComponent();
-
-    bool
-    doesPrebuffer() const;
-
+    /**
+    * @brief The file that the sound is playing
+    *
+    * @return 
+    */
     std::string
     filename() const;
 
-    bool
-    isLoop() const;
-
-    bool
-    isStream() const;
-
+    /**
+    * @brief Loads a sound from storage
+    *
+    * @param storage
+    */
     void
     load(
         const StorageContainer& storage
-    ) override;
+    );
 
+    /**
+    * @brief The name of the sound
+    *
+    * @return 
+    */
     std::string
     name() const;
 
-    void 
+    /**
+    * @brief Pauses the sound during the next frame
+    */
+    void
     pause();
 
-    void 
+    /**
+    * @brief Starts (or resumes) playing the sound
+    */
+    void
     play();
 
-    void 
+    /**
+    * @brief Stops the sound during the next frame
+    */
+    void
     stop();
 
+    /**
+    * @brief Constructs a storage container for serialization
+    *
+    * @return 
+    */
     StorageContainer
-    storage() const override;
+    storage() const;
+
+    /**
+    * @brief Properties
+    */
+    Properties m_properties;
 
     /**
     * @brief Pointer to internal sound
     */
     OgreOggSound::OgreOggISound* m_sound = nullptr;
 
-    /**
-    * @brief Properties
-    */
-    Properties
-    m_properties;
-
 private:
-
+    
     std::string m_filename;
-
-    bool m_loop = false;
 
     std::string m_name;
 
-    bool m_prebuffer = false;
 
-    bool m_stream = false;
+};
+
+/**
+* @brief A component for sound sources
+*
+*/
+class SoundSourceComponent : public Component {
+    COMPONENT(SoundSource)
+
+public:
+
+    /**
+    * @brief Lua bindings
+    *
+    * @return 
+    */
+    static luabind::scope
+    luaBindings();
+
+    /**
+    * @brief Adds a new sound
+    *
+    * @param name
+    *   The name of the sound (must be unique)
+    * @param filename
+    *   The file to play
+    *
+    * @return A reference to the new sound
+    */
+    Sound*
+    addSound(
+        std::string name,
+        std::string filename
+    );
+
+    void
+    load(
+        const StorageContainer& storage
+    ) override;
+
+    /**
+    * @brief Removes a sound by name
+    *
+    * @param name
+    */
+    void
+    removeSound(
+        std::string name
+    );
+
+    StorageContainer
+    storage() const override;
+
+    /**
+    * @brief Whether this source is relative to the listener or ambient
+    */
+    TouchableValue<bool> m_relativeToListener = true;
+
+private:
+
+    friend class SoundSourceSystem;
+
+    std::list<Sound*> m_addedSounds;
+
+    std::list<Sound*> m_removedSounds;
+
+    std::unordered_map<std::string, std::unique_ptr<Sound>> m_sounds;    
 
 };
 

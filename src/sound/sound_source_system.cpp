@@ -13,8 +13,138 @@
 using namespace thrive;
 
 ////////////////////////////////////////////////////////////////////////////////
+// Sound
+////////////////////////////////////////////////////////////////////////////////
+
+luabind::scope
+Sound::luaBindings() {
+    using namespace luabind;
+    return class_<Sound>("Sound")
+        .scope [
+            class_<Properties, Touchable>("Properties")
+                .def_readwrite("playState", &Properties::playState)
+                .def_readwrite("loop", &Properties::loop)
+                .def_readwrite("volume", &Properties::volume)
+                .def_readwrite("maxDistance", &Properties::maxDistance)
+                .def_readwrite("rolloffFactor", &Properties::rolloffFactor)
+                .def_readwrite("referenceDistance", &Properties::referenceDistance)
+                .def_readwrite("priority", &Properties::priority)
+        ]
+        .enum_("PlayState") [
+            value("Play", PlayState::Play),
+            value("Pause", PlayState::Pause),
+            value("Stop", PlayState::Stop)
+        ]
+        .def(constructor<std::string, std::string>())
+        .def("name", &Sound::name)
+        .def("pause", &Sound::pause)
+        .def("play", &Sound::play)
+        .def("stop", &Sound::stop)
+        .def_readonly("properties", &Sound::m_properties)
+    ;
+}
+
+
+Sound::Sound()
+  : Sound("", "")
+{
+}
+
+
+Sound::Sound(
+    std::string name,
+    std::string filename
+) : m_filename(filename),
+    m_name(name)
+{
+}
+
+
+std::string
+Sound::filename() const {
+    return m_filename;
+}
+
+
+void
+Sound::load(
+    const StorageContainer& storage
+) {
+    m_filename = storage.get<std::string>("filename");
+    m_name = storage.get<std::string>("name");
+    m_properties.playState = static_cast<PlayState>(
+        storage.get<int16_t>("playState", PlayState::Stop)
+    );
+    m_properties.loop = storage.get<bool>("loop");
+    m_properties.volume = storage.get<float>("volume");
+    m_properties.maxDistance = storage.get<float>("maxDistance", -1.0f);
+    m_properties.rolloffFactor = storage.get<float>("rolloffFactor", -1.0f);
+    m_properties.referenceDistance = storage.get<float>("referenceDistance", 100.0f);
+    m_properties.priority = storage.get<uint8_t>("priority");
+}
+
+
+std::string
+Sound::name() const {
+    return m_name;
+}
+
+
+void
+Sound::play() {
+    m_properties.playState = PlayState::Play;
+    m_properties.touch();
+}
+
+
+void
+Sound::pause() {
+    m_properties.playState = PlayState::Pause;
+    m_properties.touch();
+}
+
+
+void
+Sound::stop() {
+    m_properties.playState = PlayState::Stop;
+    m_properties.touch();
+}
+
+
+StorageContainer
+Sound::storage() const {
+    StorageContainer storage;
+    storage.set("filename", m_filename);
+    storage.set("name", m_name);
+    storage.set<int16_t>("playState", m_properties.playState);
+    storage.set("loop", m_properties.loop);
+    storage.set("volume", m_properties.volume);
+    storage.set("maxDistance", m_properties.maxDistance);
+    storage.set("rolloffFactor", m_properties.rolloffFactor);
+    storage.set("referenceDistance", m_properties.referenceDistance);
+    storage.set("priority", m_properties.priority);
+    return storage;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
 // SoundSourceComponent
 ////////////////////////////////////////////////////////////////////////////////
+
+static bool
+SoundSourceComponent_getRelativeToListener(
+    const SoundSourceComponent* self
+) {
+    return self->m_relativeToListener;
+}
+
+static void
+SoundSourceComponent_setRelativeToListener(
+    SoundSourceComponent* self,
+    bool value
+) {
+    self->m_relativeToListener = value;
+}
 
 luabind::scope
 SoundSourceComponent::luaBindings() {
@@ -24,79 +154,26 @@ SoundSourceComponent::luaBindings() {
             value("TYPE_ID", SoundSourceComponent::TYPE_ID)
         ]
         .scope [
-            def("TYPE_NAME", &SoundSourceComponent::TYPE_NAME),
-            class_<Properties, Touchable>("Properties")
-                .def_readwrite("playState", &Properties::playState)
-                .def_readwrite("startTime", &Properties::startTime)
-                .def_readwrite("volume", &Properties::volume)
-                .def_readwrite("maxVolume", &Properties::maxVolume)
-                .def_readwrite("minVolume", &Properties::minVolume)
-                .def_readwrite("insideAngle", &Properties::insideAngle)
-                .def_readwrite("outsideAngle", &Properties::outsideAngle)
-                .def_readwrite("outerConeVolume", &Properties::outerConeVolume)
-                .def_readwrite("maxDistance", &Properties::maxDistance)
-                .def_readwrite("rolloffFactor", &Properties::rolloffFactor)
-                .def_readwrite("referenceDistance", &Properties::referenceDistance)
-                .def_readwrite("pitch", &Properties::pitch)
-                .def_readwrite("relativeToListener", &Properties::relativeToListener)
-                .def_readwrite("priority", &Properties::priority)
+            def("TYPE_NAME", &SoundSourceComponent::TYPE_NAME)
         ]
-        .enum_("PlayState") [
-            value("Play", PlayState::Play),
-            value("Pause", PlayState::Pause),
-            value("Stop", PlayState::Stop)
-        ]
-        .def(constructor<std::string, std::string, bool, bool, bool>())
-        .def("pause", &SoundSourceComponent::pause)
-        .def("play", &SoundSourceComponent::play)
-        .def("stop", &SoundSourceComponent::stop)
-        .def_readonly("properties", &SoundSourceComponent::m_properties)
+        .def(constructor<>())
+        .def("addSound", &SoundSourceComponent::addSound)
+        .def("removeSound", &SoundSourceComponent::removeSound)
+        .property("relativeToListener", SoundSourceComponent_getRelativeToListener, SoundSourceComponent_setRelativeToListener)
     ;
 }
 
 
-SoundSourceComponent::SoundSourceComponent(
+Sound*
+SoundSourceComponent::addSound(
     std::string name,
-    std::string filename,
-    bool stream,
-    bool loop,
-    bool prebuffer
-) : m_filename(filename),
-    m_loop(loop),
-    m_name(name),
-    m_prebuffer(prebuffer),
-    m_stream(stream)
-{
-}
-
-
-SoundSourceComponent::SoundSourceComponent()
-  : SoundSourceComponent("", "", false, false, false)
-{
-}
-
-
-bool
-SoundSourceComponent::doesPrebuffer() const {
-    return m_prebuffer;
-}
-
-
-std::string
-SoundSourceComponent::filename() const {
-    return m_filename;
-}
-
-
-bool
-SoundSourceComponent::isLoop() const {
-    return m_loop;
-}
-
-
-bool
-SoundSourceComponent::isStream() const {
-    return m_stream;
+    std::string filename
+) {
+    auto sound = make_unique<Sound>(name, filename);
+    Sound* rawSound = sound.get();
+    m_sounds.emplace(name, std::move(sound));
+    m_addedSounds.push_back(rawSound);
+    return rawSound;
 }
 
 
@@ -105,79 +182,40 @@ SoundSourceComponent::load(
     const StorageContainer& storage
 ) {
     Component::load(storage);
-    m_filename = storage.get<std::string>("filename");
-    m_loop = storage.get<bool>("loop");
-    m_name = storage.get<std::string>("name");
-    m_prebuffer = storage.get<bool>("prebuffer");
-    m_stream = storage.get<bool>("stream");
-    m_properties.playState = static_cast<PlayState>(
-        storage.get<int16_t>("playState", PlayState::Stop)
-    );
-    m_properties.startTime = storage.get<float>("startTime");
-    m_properties.volume = storage.get<float>("volume");
-    m_properties.maxVolume = storage.get<float>("maxVolume");
-    m_properties.minVolume = storage.get<float>("minVolume");
-    m_properties.insideAngle = storage.get<float>("insideAngle", 360.0f);
-    m_properties.outsideAngle = storage.get<float>("outsideAngle", 360.0f);
-    m_properties.outerConeVolume = storage.get<float>("outerConeVolume");
-    m_properties.maxDistance = storage.get<float>("maxDistance", -1.0f);
-    m_properties.rolloffFactor = storage.get<float>("rolloffFactor", -1.0f);
-    m_properties.referenceDistance = storage.get<float>("referenceDistance", 100.0f);
-    m_properties.pitch = storage.get<float>("pitch", 1.0f);
-    m_properties.relativeToListener = storage.get<bool>("relativeToListener");
-    m_properties.priority = storage.get<uint8_t>("priority");
-}
-
-
-std::string
-SoundSourceComponent::name() const {
-    return m_name;
+    m_relativeToListener = storage.get<bool>("relativeToListener");
+    StorageList sounds = storage.get<StorageList>("sounds");
+    for (const StorageContainer& soundStorage : sounds) {
+        auto sound = make_unique<Sound>();
+        sound->load(soundStorage);
+        m_sounds.emplace(
+            sound->name(),
+            std::move(sound)
+        );
+    }
 }
 
 
 void
-SoundSourceComponent::play() {
-    m_properties.playState = PlayState::Play;
-    m_properties.touch();
-}
-
-
-void
-SoundSourceComponent::pause() {
-    m_properties.playState = PlayState::Pause;
-    m_properties.touch();
-}
-
-
-void
-SoundSourceComponent::stop() {
-    m_properties.playState = PlayState::Stop;
-    m_properties.touch();
+SoundSourceComponent::removeSound(
+    std::string name
+) {
+    auto iterator = m_sounds.find(name);
+    if (iterator != m_sounds.end()) {
+        m_removedSounds.push_back(iterator->second.get());
+        m_sounds.erase(iterator);
+    }
 }
 
 
 StorageContainer
 SoundSourceComponent::storage() const {
     StorageContainer storage = Component::storage();
-    storage.set("filename", m_filename);
-    storage.set("loop", m_loop);
-    storage.set("name", m_name);
-    storage.set("prebuffer", m_prebuffer);
-    storage.set("stream", m_stream);
-    storage.set<int16_t>("playState", m_properties.playState);
-    storage.set("startTime", m_properties.startTime);
-    storage.set("volume", m_properties.volume);
-    storage.set("maxVolume", m_properties.maxVolume);
-    storage.set("minVolume", m_properties.minVolume);
-    storage.set("insideAngle", m_properties.insideAngle);
-    storage.set("outsideAngle", m_properties.outsideAngle);
-    storage.set("outerConeVolume", m_properties.outerConeVolume);
-    storage.set("maxDistance", m_properties.maxDistance);
-    storage.set("rolloffFactor", m_properties.rolloffFactor);
-    storage.set("referenceDistance", m_properties.referenceDistance);
-    storage.set("pitch", m_properties.pitch);
-    storage.set("relativeToListener", m_properties.relativeToListener);
-    storage.set("priority", m_properties.priority);
+    storage.set("relativeToListener", m_relativeToListener.get());
+    StorageList sounds;
+    sounds.reserve(m_sounds.size());
+    for (const auto& pair : m_sounds) {
+        sounds.push_back(pair.second->storage());
+    }
     return storage;
 }
 
@@ -202,22 +240,32 @@ struct SoundSourceSystem::Implementation {
     void
     removeAllSounds() {
         for (const auto& item : m_entities) {
-            this->removeSound(item.first);
+            EntityId entityId = item.first;
+            this->removeSoundsForEntity(entityId);
+        }
+        m_sounds.clear();
+    }
+
+    void
+    removeSoundsForEntity(
+        EntityId entityId
+    ) {
+        for (const auto& pair : m_sounds[entityId]) {
+            OgreOggSound::OgreOggISound* sound = pair.second;
+            this->removeSound(sound);
         }
     }
 
     void
     removeSound(
-        EntityId entityId
+        OgreOggSound::OgreOggISound* sound
     ) {
         auto& soundManager = OgreOggSound::OgreOggSoundManager::getSingleton();
-        OgreOggSound::OgreOggISound* sound = m_sounds[entityId];
         if (sound) {
             Ogre::SceneNode* sceneNode = sound->getParentSceneNode();
             sceneNode->detachObject(sound);
             soundManager.destroySound(sound);
         }
-        m_sounds.erase(entityId);
     }
 
     void
@@ -226,7 +274,14 @@ struct SoundSourceSystem::Implementation {
             EntityId entityId = item.first;
             OgreSceneNodeComponent* sceneNodeComponent = std::get<0>(item.second);
             SoundSourceComponent* soundSourceComponent = std::get<1>(item.second);
-            this->restoreSound(entityId, sceneNodeComponent, soundSourceComponent);
+            for (const auto& pair : soundSourceComponent->m_sounds) {
+                Sound* sound = pair.second.get();
+                this->restoreSound(
+                    entityId, 
+                    sceneNodeComponent, 
+                    sound
+                );
+            }
         }
     }
 
@@ -234,23 +289,26 @@ struct SoundSourceSystem::Implementation {
     restoreSound(
         EntityId entityId,
         OgreSceneNodeComponent* sceneNodeComponent,
-        SoundSourceComponent* soundSourceComponent
+        Sound* sound
     ) {
+        static const bool STREAM = true;
+        static const bool PREBUFFER = true;
         if (not sceneNodeComponent->m_sceneNode) {
             return;
         }
         auto& soundManager = OgreOggSound::OgreOggSoundManager::getSingleton();
-        OgreOggSound::OgreOggISound* sound = soundManager.createSound(
-            soundSourceComponent->name(),
-            soundSourceComponent->filename(),
-            soundSourceComponent->isStream(),
-            soundSourceComponent->isLoop(),
-            soundSourceComponent->doesPrebuffer()
+        std::cout << "Looping: " << sound->m_properties.loop << std::endl;
+        OgreOggSound::OgreOggISound* ogreSound = soundManager.createSound(
+            sound->name(),
+            sound->filename(),
+            STREAM,
+            sound->m_properties.loop,
+            PREBUFFER
         );
-        if (sound) {
-            soundSourceComponent->m_sound = sound;
-            m_sounds[entityId] = sound;
-            sceneNodeComponent->m_sceneNode->attachObject(sound);
+        if (ogreSound) {
+            sound->m_sound = ogreSound;
+            m_sounds[entityId].emplace(sound->name(), ogreSound);
+            sceneNodeComponent->m_sceneNode->attachObject(ogreSound);
         }
         else {
             //TODO: Log error. Or does OgreOggSound do this already?
@@ -259,7 +317,10 @@ struct SoundSourceSystem::Implementation {
     
     EntityFilter<OgreSceneNodeComponent, SoundSourceComponent> m_entities = {true};
 
-    std::unordered_map<EntityId, OgreOggSound::OgreOggISound*> m_sounds;
+    std::unordered_map<
+        EntityId, 
+        std::unordered_map<std::string, OgreOggSound::OgreOggISound*> 
+    > m_sounds;
 
 };
 
@@ -311,47 +372,59 @@ SoundSourceSystem::shutdown() {
 void
 SoundSourceSystem::update(int) {
     for (EntityId entityId : m_impl->m_entities.removedEntities()) {
-        m_impl->removeSound(entityId);
+        m_impl->removeSoundsForEntity(entityId);
     }
     for (auto& value : m_impl->m_entities.addedEntities()) {
         EntityId entityId = value.first;
         OgreSceneNodeComponent* sceneNodeComponent = std::get<0>(value.second);
         SoundSourceComponent* soundSourceComponent = std::get<1>(value.second);
-        m_impl->restoreSound(entityId, sceneNodeComponent, soundSourceComponent);
+        for (const auto& pair : soundSourceComponent->m_sounds) {
+            Sound* sound = pair.second.get();
+            m_impl->restoreSound(
+                entityId, 
+                sceneNodeComponent, 
+                sound
+            );
+        }
     }
     m_impl->m_entities.clearChanges();
     for (auto& value : m_impl->m_entities) {
+        EntityId entityId = value.first;
+        OgreSceneNodeComponent* sceneNodeComponent = std::get<0>(value.second);
         SoundSourceComponent* soundSourceComponent = std::get<1>(value.second);
-        if (soundSourceComponent->m_properties.hasChanges()) {
-            const auto& properties = soundSourceComponent->m_properties;
-            OgreOggSound::OgreOggISound* sound = soundSourceComponent->m_sound;
-            sound->setLoopOffset(properties.startTime);
-            sound->setVolume(properties.volume);
-            sound->setMaxVolume(properties.maxVolume);
-            sound->setMinVolume(properties.minVolume);
-            sound->setConeAngles(properties.insideAngle, properties.outsideAngle);
-            sound->setOuterConeVolume(properties.outerConeVolume);
-            sound->setMaxDistance(properties.maxDistance);
-            sound->setRolloffFactor(properties.rolloffFactor);
-            sound->setReferenceDistance(properties.referenceDistance);
-            sound->setPitch(properties.pitch);
-            sound->setRelativeToListener(properties.relativeToListener);
-            sound->setPriority(properties.priority);
-            switch(properties.playState) {
-                case SoundSourceComponent::PlayState::Play:
-                    sound->play();
-                    break;
-                case SoundSourceComponent::PlayState::Pause:
-                    sound->pause();
-                    break;
-                case SoundSourceComponent::PlayState::Stop:
-                    sound->stop();
-                    break;
-                default:
-                    // Shut up GCC
-                    break;
+        for (const auto& pair : soundSourceComponent->m_sounds) {
+            Sound* sound = pair.second.get();
+            if (not sound->m_sound) {
+                m_impl->restoreSound(
+                    entityId,
+                    sceneNodeComponent,
+                    sound
+                );
             }
-            soundSourceComponent->m_properties.untouch();
+            if (sound->m_properties.hasChanges()) {
+                const auto& properties = sound->m_properties;
+                OgreOggSound::OgreOggISound* ogreSound = sound->m_sound;
+                ogreSound->setVolume(properties.volume);
+                ogreSound->setMaxDistance(properties.maxDistance);
+                ogreSound->setRolloffFactor(properties.rolloffFactor);
+                ogreSound->setReferenceDistance(properties.referenceDistance);
+                ogreSound->setPriority(properties.priority);
+                switch(properties.playState) {
+                    case Sound::PlayState::Play:
+                        ogreSound->play();
+                        break;
+                    case Sound::PlayState::Pause:
+                        ogreSound->pause();
+                        break;
+                    case Sound::PlayState::Stop:
+                        ogreSound->stop();
+                        break;
+                    default:
+                        // Shut up GCC
+                        break;
+                }
+                sound->m_properties.untouch();
+            }
         }
     }
 }

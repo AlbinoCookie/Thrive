@@ -137,11 +137,14 @@ end
 local function setupEmitter()
     -- Setting up an emitter for glucose
     local entity = Entity("glucose-emitter")
-    -- Sound
-    local soundSource = SoundSourceComponent("emitter", "rain.ogg", false, true, false)
-    soundSource.properties.playState = SoundSourceComponent.Play
-    soundSource.properties.relativeToListener = true
+    -- Sound Source
+    local soundSource = SoundSourceComponent()
+    soundSource.relativeToListener = true
     entity:addComponent(soundSource)
+    -- Sound
+    local sound = soundSource:addSound("emitter", "rain.ogg")
+    sound.properties.playState = Sound.Play
+    sound.properties.loop = true
     -- Rigid body
     local rigidBody = RigidBodyComponent()
     rigidBody.properties.friction = 0.2
